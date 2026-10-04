@@ -9,6 +9,7 @@ package v1
 import (
 	context "context"
 	http "github.com/go-kratos/kratos/v3/transport/http"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,6 +20,7 @@ const _ = http.SupportPackageIsVersion3
 
 const OperationWorkflowServiceCreateExecution = "/workflow.v1.WorkflowService/CreateExecution"
 const OperationWorkflowServiceCreateWorkflow = "/workflow.v1.WorkflowService/CreateWorkflow"
+const OperationWorkflowServiceDeleteWorkflow = "/workflow.v1.WorkflowService/DeleteWorkflow"
 const OperationWorkflowServiceGetExecution = "/workflow.v1.WorkflowService/GetExecution"
 const OperationWorkflowServiceGetWorkflow = "/workflow.v1.WorkflowService/GetWorkflow"
 const OperationWorkflowServiceHealthz = "/workflow.v1.WorkflowService/Healthz"
@@ -32,6 +34,8 @@ type WorkflowServiceHTTPServer interface {
 	CreateExecution(context.Context, *CreateExecutionRequest) (*CreateExecutionResponse, error)
 	// CreateWorkflow CreateWorkflow 创建工作流。
 	CreateWorkflow(context.Context, *CreateWorkflowRequest) (*CreateWorkflowResponse, error)
+	// DeleteWorkflow DeleteWorkflow 删除工作流。
+	DeleteWorkflow(context.Context, *DeleteWorkflowRequest) (*emptypb.Empty, error)
 	// GetExecution GetExecution 查询工作流执行。
 	GetExecution(context.Context, *GetExecutionRequest) (*GetExecutionResponse, error)
 	// GetWorkflow GetWorkflow 查询工作流。
@@ -59,6 +63,7 @@ func RegisterWorkflowServiceHTTPServer(s *http.Server, srv WorkflowServiceHTTPSe
 	r.Handle("POST", "/internal/v1/workflows", _WorkflowService_CreateWorkflow0_HTTP_Handler(srv))
 	r.Handle("GET", "/internal/v1/workflows", _WorkflowService_ListWorkflows0_HTTP_Handler(srv))
 	r.Handle("GET", "/internal/v1/workflows/{workflow_id}", _WorkflowService_GetWorkflow0_HTTP_Handler(srv))
+	r.Handle("DELETE", "/internal/v1/workflows/{workflow_id}", _WorkflowService_DeleteWorkflow0_HTTP_Handler(srv))
 }
 
 func _WorkflowService_Healthz0_HTTP_Handler(srv WorkflowServiceHTTPServer) func(ctx http.Context) error {
@@ -238,11 +243,35 @@ func _WorkflowService_GetWorkflow0_HTTP_Handler(srv WorkflowServiceHTTPServer) f
 	}
 }
 
+func _WorkflowService_DeleteWorkflow0_HTTP_Handler(srv WorkflowServiceHTTPServer) func(ctx http.Context) error {
+	return func(ctx http.Context) error {
+		var in DeleteWorkflowRequest
+		if err := ctx.BindQuery(&in); err != nil {
+			return err
+		}
+		if err := ctx.BindVars(&in); err != nil {
+			return err
+		}
+		http.SetOperation(ctx, OperationWorkflowServiceDeleteWorkflow)
+		h := ctx.Middleware(func(ctx context.Context, req interface{}) (interface{}, error) {
+			return srv.DeleteWorkflow(ctx, req.(*DeleteWorkflowRequest))
+		})
+		out, err := h(ctx, &in)
+		if err != nil {
+			return err
+		}
+		reply := out.(*emptypb.Empty)
+		return ctx.Result(200, reply)
+	}
+}
+
 type WorkflowServiceHTTPClient interface {
 	// CreateExecution CreateExecution 发起异步工作流执行。
 	CreateExecution(ctx context.Context, req *CreateExecutionRequest, opts ...http.CallOption) (rsp *CreateExecutionResponse, err error)
 	// CreateWorkflow CreateWorkflow 创建工作流。
 	CreateWorkflow(ctx context.Context, req *CreateWorkflowRequest, opts ...http.CallOption) (rsp *CreateWorkflowResponse, err error)
+	// DeleteWorkflow DeleteWorkflow 删除工作流。
+	DeleteWorkflow(ctx context.Context, req *DeleteWorkflowRequest, opts ...http.CallOption) (rsp *emptypb.Empty, err error)
 	// GetExecution GetExecution 查询工作流执行。
 	GetExecution(ctx context.Context, req *GetExecutionRequest, opts ...http.CallOption) (rsp *GetExecutionResponse, err error)
 	// GetWorkflow GetWorkflow 查询工作流。
@@ -297,6 +326,23 @@ func (c *WorkflowServiceHTTPClientImpl) CreateWorkflow(ctx context.Context, in *
 		http.PathTemplate(pattern),
 	}, opts...)
 	err := c.cc.Invoke(ctx, "POST", path, in, &out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
+// DeleteWorkflow DeleteWorkflow 删除工作流。
+func (c *WorkflowServiceHTTPClientImpl) DeleteWorkflow(ctx context.Context, in *DeleteWorkflowRequest, opts ...http.CallOption) (*emptypb.Empty, error) {
+	var out emptypb.Empty
+	pattern := "/internal/v1/workflows/{workflow_id}"
+	path := http.BuildPath(pattern, in, http.WithQueryParams())
+	opts = append([]http.CallOption{
+		http.Accept("application/protojson"),
+		http.Operation(OperationWorkflowServiceDeleteWorkflow),
+		http.PathTemplate(pattern),
+	}, opts...)
+	err := c.cc.Invoke(ctx, "DELETE", path, nil, &out, opts...)
 	if err != nil {
 		return nil, err
 	}

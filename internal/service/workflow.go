@@ -7,6 +7,7 @@ import (
 	pb "git.sotatts.online/matrix/matrix/workflow/api-server/api/workflow/v1"
 	"git.sotatts.online/matrix/matrix/workflow/api-server/internal/biz"
 
+	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -103,6 +104,27 @@ func (s *WorkflowService) GetWorkflow(ctx context.Context, req *pb.GetWorkflowRe
 		return nil, err
 	}
 	return &pb.GetWorkflowResponse{Data: reply}, nil
+}
+
+// DeleteWorkflow 删除工作流。
+func (s *WorkflowService) DeleteWorkflow(
+	ctx context.Context,
+	req *pb.DeleteWorkflowRequest,
+) (*emptypb.Empty, error) {
+	if req == nil {
+		return nil, biz.ErrWorkflowInvalidArgument
+	}
+
+	workflowID := strings.TrimSpace(req.GetWorkflowId())
+	if workflowID == "" {
+		return nil, biz.ErrWorkflowInvalidArgument
+	}
+
+	if err := s.workflow.DeleteWorkflow(ctx, workflowID); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 const (

@@ -32,6 +32,7 @@ const (
 	ErrorReason_WORKFLOW_NOT_FOUND         ErrorReason = 5
 	ErrorReason_WORKFLOW_INTERNAL          ErrorReason = 6
 	ErrorReason_WORKFLOW_INVALID_ARGUMENT  ErrorReason = 7
+	ErrorReason_WORKFLOW_HAS_EXECUTIONS    ErrorReason = 8
 )
 
 // Enum value maps for ErrorReason.
@@ -45,6 +46,7 @@ var (
 		5: "WORKFLOW_NOT_FOUND",
 		6: "WORKFLOW_INTERNAL",
 		7: "WORKFLOW_INVALID_ARGUMENT",
+		8: "WORKFLOW_HAS_EXECUTIONS",
 	}
 	ErrorReason_value = map[string]int32{
 		"WORKFLOW_UNSPECIFIED":       0,
@@ -55,6 +57,7 @@ var (
 		"WORKFLOW_NOT_FOUND":         5,
 		"WORKFLOW_INTERNAL":          6,
 		"WORKFLOW_INVALID_ARGUMENT":  7,
+		"WORKFLOW_HAS_EXECUTIONS":    8,
 	}
 )
 
@@ -89,7 +92,7 @@ var File_workflow_v1_error_reason_proto protoreflect.FileDescriptor
 
 const file_workflow_v1_error_reason_proto_rawDesc = "" +
 	"\n" +
-	"\x1eworkflow/v1/error_reason.proto\x12\vworkflow.v1*\xe4\x01\n" +
+	"\x1eworkflow/v1/error_reason.proto\x12\vworkflow.v1*\x81\x02\n" +
 	"\vErrorReason\x12\x18\n" +
 	"\x14WORKFLOW_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13EXECUTION_NOT_FOUND\x10\x01\x12\x1c\n" +
@@ -98,7 +101,8 @@ const file_workflow_v1_error_reason_proto_rawDesc = "" +
 	"\x12EXECUTION_INTERNAL\x10\x04\x12\x16\n" +
 	"\x12WORKFLOW_NOT_FOUND\x10\x05\x12\x15\n" +
 	"\x11WORKFLOW_INTERNAL\x10\x06\x12\x1d\n" +
-	"\x19WORKFLOW_INVALID_ARGUMENT\x10\aBIZGgit.sotatts.online/matrix/matrix/workflow/api-server/api/workflow/v1;v1b\x06proto3"
+	"\x19WORKFLOW_INVALID_ARGUMENT\x10\a\x12\x1b\n" +
+	"\x17WORKFLOW_HAS_EXECUTIONS\x10\bBIZGgit.sotatts.online/matrix/matrix/workflow/api-server/api/workflow/v1;v1b\x06proto3"
 
 var (
 	file_workflow_v1_error_reason_proto_rawDescOnce sync.Once

@@ -158,6 +158,21 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/workflow.v1.GetWorkflowResponse'
+        delete:
+            tags:
+                - WorkflowService
+            description: DeleteWorkflow 删除工作流。
+            operationId: WorkflowService_DeleteWorkflow
+            parameters:
+                - name: workflow_id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
     /live:
         get:
             tags:

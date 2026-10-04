@@ -18,6 +18,11 @@ var (
 	ErrWorkflowInvalidArgument = errors.BadRequest(v1.ErrorReason_WORKFLOW_INVALID_ARGUMENT.String(), "invalid workflow argument")
 	// ErrWorkflowInternal 表示工作流持久化数据不可用。
 	ErrWorkflowInternal = errors.InternalServer(v1.ErrorReason_WORKFLOW_INTERNAL.String(), "workflow internal error")
+	// ErrWorkflowHasExecutions 表示工作流已有执行记录，不能删除。
+	ErrWorkflowHasExecutions = errors.Conflict(
+		v1.ErrorReason_WORKFLOW_HAS_EXECUTIONS.String(),
+		"workflow has executions",
+	)
 )
 
 // Workflow 表示工作流定义。
@@ -44,6 +49,7 @@ type WorkflowRepo interface {
 	FindByID(ctx context.Context, workflowID string) (*Workflow, error)
 	ListWorkflows(ctx context.Context, query ListWorkflowsQuery) ([]*Workflow, error)
 	CreateWorkflow(ctx context.Context, workflow *Workflow) (*Workflow, error)
+	DeleteWorkflow(ctx context.Context, workflowID string) error
 }
 
 // WorkflowUsecase 负责工作流定义的基础校验和持久化。
@@ -88,6 +94,15 @@ func (uc *WorkflowUsecase) CreateWorkflow(ctx context.Context, workflow *Workflo
 
 	workflow.ID = uuid.NewString()
 	return uc.repo.CreateWorkflow(ctx, workflow)
+}
+
+// DeleteWorkflow 删除工作流。
+func (uc *WorkflowUsecase) DeleteWorkflow(ctx context.Context, workflowID string) error {
+	workflowID = strings.TrimSpace(workflowID)
+	if workflowID == "" {
+		return ErrWorkflowInvalidArgument
+	}
+	return uc.repo.DeleteWorkflow(ctx, workflowID)
 }
 
 func validateDefinitionGraph(definition DefinitionGraph) error {

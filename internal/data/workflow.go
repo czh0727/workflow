@@ -9,7 +9,9 @@ import (
 	"git.sotatts.online/matrix/matrix/workflow/api-server/internal/biz"
 	"git.sotatts.online/matrix/matrix/workflow/api-server/internal/data/db/sqlcgen"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -94,6 +96,32 @@ func (r *workflowRepo) CreateWorkflow(ctx context.Context, workflow *biz.Workflo
 		return nil, fmt.Errorf("create workflow: %v: %w", err, biz.ErrWorkflowInternal)
 	}
 	return toBizWorkflow(row)
+}
+
+func (r *workflowRepo) DeleteWorkflow(ctx context.Context, workflowID string) error {
+	_, err := r.data.queries.DeleteWorkflow(ctx, workflowID)
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return biz.ErrWorkflowNotFound
+	}
+
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return ctxErr
+	}
+
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
+		return biz.ErrWorkflowHasExecutions
+	}
+
+	return fmt.Errorf(
+		"delete workflow: %v: %w",
+		err,
+		biz.ErrWorkflowInternal,
+	)
 }
 
 func newWorkflow(workflow *biz.Workflow) (sqlcgen.CreateWorkflowParams, error) {

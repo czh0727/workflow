@@ -33,3 +33,8 @@ VALUES (
     sqlc.arg(definition)
 )
 RETURNING *;
+
+-- name: DeleteWorkflow :one
+DELETE FROM workflow
+WHERE workflow_id = sqlc.arg(workflow_id)
+RETURNING workflow_id;

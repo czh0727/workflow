@@ -58,6 +58,19 @@ func (q *Queries) CreateWorkflow(ctx context.Context, arg CreateWorkflowParams) 
 	return i, err
 }
 
+const deleteWorkflow = `-- name: DeleteWorkflow :one
+DELETE FROM workflow
+WHERE workflow_id = $1
+RETURNING workflow_id
+`
+
+func (q *Queries) DeleteWorkflow(ctx context.Context, workflowID string) (string, error) {
+	row := q.db.QueryRow(ctx, deleteWorkflow, workflowID)
+	var workflow_id string
+	err := row.Scan(&workflow_id)
+	return workflow_id, err
+}
+
 const getWorkflowByID = `-- name: GetWorkflowByID :one
 SELECT workflow_id, uid, name, type, definition, created_at, updated_at
 FROM workflow

@@ -7,11 +7,13 @@ import (
 )
 
 type fakeWorkflowRepo struct {
-	workflow *Workflow
-	list     []*Workflow
-	err      error
-	created  *Workflow
-	query    ListWorkflowsQuery
+	workflow    *Workflow
+	list        []*Workflow
+	err         error
+	created     *Workflow
+	query       ListWorkflowsQuery
+	deletedID   string
+	deleteCalls int
 }
 
 func (r *fakeWorkflowRepo) FindByID(context.Context, string) (*Workflow, error) {
@@ -26,6 +28,44 @@ func (r *fakeWorkflowRepo) ListWorkflows(_ context.Context, query ListWorkflowsQ
 func (r *fakeWorkflowRepo) CreateWorkflow(_ context.Context, workflow *Workflow) (*Workflow, error) {
 	r.created = workflow
 	return workflow, r.err
+}
+
+func (r *fakeWorkflowRepo) DeleteWorkflow(_ context.Context, workflowID string) error {
+	r.deletedID = workflowID
+	r.deleteCalls++
+	return r.err
+}
+
+func TestWorkflowUsecaseDeleteWorkflow(t *testing.T) {
+	repoErr := stderrors.New("delete failed")
+	tests := []struct {
+		name       string
+		workflowID string
+		repoErr    error
+		wantErr    error
+		wantID     string
+		wantCalls  int
+	}{
+		{name: "deletes workflow", workflowID: "workflow-1", wantID: "workflow-1", wantCalls: 1},
+		{name: "trims workflow id", workflowID: " workflow-1 ", wantID: "workflow-1", wantCalls: 1},
+		{name: "rejects empty id", wantErr: ErrWorkflowInvalidArgument},
+		{name: "rejects whitespace id", workflowID: " \t ", wantErr: ErrWorkflowInvalidArgument},
+		{name: "not found", workflowID: "missing", repoErr: ErrWorkflowNotFound, wantErr: ErrWorkflowNotFound, wantID: "missing", wantCalls: 1},
+		{name: "has executions", workflowID: "workflow-1", repoErr: ErrWorkflowHasExecutions, wantErr: ErrWorkflowHasExecutions, wantID: "workflow-1", wantCalls: 1},
+		{name: "returns repo error", workflowID: "workflow-1", repoErr: repoErr, wantErr: repoErr, wantID: "workflow-1", wantCalls: 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := &fakeWorkflowRepo{err: tt.repoErr}
+			err := NewWorkflowUsecase(repo).DeleteWorkflow(context.Background(), tt.workflowID)
+			if !stderrors.Is(err, tt.wantErr) {
+				t.Fatalf("DeleteWorkflow() error = %v, want %v", err, tt.wantErr)
+			}
+			if repo.deletedID != tt.wantID || repo.deleteCalls != tt.wantCalls {
+				t.Fatalf("repo DeleteWorkflow() = (%q, %d calls), want (%q, %d calls)", repo.deletedID, repo.deleteCalls, tt.wantID, tt.wantCalls)
+			}
+		})
+	}
 }
 
 func TestWorkflowUsecaseCreateWorkflow(t *testing.T) {

@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package workflow.v1;
 
+import "google/protobuf/empty.proto";
 import "gnostic/openapi/v3/annotations.proto";
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
@@ -62,6 +63,18 @@ service WorkflowService {
   rpc GetWorkflow(GetWorkflowRequest) returns (GetWorkflowResponse) {
     option (google.api.http) = {get: "/internal/v1/workflows/{workflow_id}"};
   }
+
+  // DeleteWorkflow 删除工作流。
+  rpc DeleteWorkflow(DeleteWorkflowRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/internal/v1/workflows/{workflow_id}"
+    };
+  }
+}
+
+// DeleteWorkflowRequest 是删除工作流的请求。
+message DeleteWorkflowRequest {
+  string workflow_id = 1 [json_name = "workflow_id"];
 }
 
 message WorkflowServiceHealthzRequest {}

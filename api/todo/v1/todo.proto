@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package todo.v1;
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "git.sotatts.online/matrix/matrix/workflow/api-server/api/todo/v1;v1";
+option java_multiple_files = true;
+option java_package = "io.grpc.examples.todo.v1";
+option java_outer_classname = "TodoProto";
+
+// TodoService 提供用于管理待办事项的简单 CRUD 示例。
+// 该服务演示一元、服务端流和双向流 RPC，
+// 以及 AIP 风格的列表过滤、排序和分页。
+service TodoService {
+  // CreateTodo 创建待办事项，并返回已持久化的记录，
+  // 服务端会填充 id、create_time 和 update_time。
+  // 请求数据校验失败时返回 INVALID_ARGUMENT。
+  rpc CreateTodo (CreateTodoRequest) returns (Todo) {
+    option (google.api.http) = {
+      post: "/v1/todos/create"
+      body: "todo"
+    };
+  }
+
+  // GetTodo 根据 ID 返回单个待办事项。
+  // 指定 ID 不存在时返回 NOT_FOUND。
+  rpc GetTodo (GetTodoRequest) returns (Todo) {
+    option (google.api.http) = {
+      get: "/v1/todos/{id}"
+    };
+  }
+
+  // ListTodos 返回一页待办事项，可选过滤和排序。
+  // 使用 TodoSet 中的 next_page_token 获取后续页面。
+  // filter、order_by 或 page_token 格式错误时返回 INVALID_ARGUMENT。
+  rpc ListTodos (ListTodosRequest) returns (TodoSet) {
+    option (google.api.http) = {
+      get: "/v1/todos/list"
+    };
+  }
+
+  // UpdateTodo 使用 FieldMask 对已有待办事项执行部分更新。
+  // 只有 update_mask 列出的字段会被覆盖，
+  // 其他字段保持不变。
+  // 目标待办事项不存在时返回 NOT_FOUND，或
+  // update_mask 引用了未知字段时返回 INVALID_ARGUMENT。
+  rpc UpdateTodo (UpdateTodoRequest) returns (Todo) {
+    option (google.api.http) = {
+      put: "/v1/todos/update"
+      body: "todo"
+    };
+  }
+
+  // DeleteTodo 根据 ID 永久删除待办事项。
+  // 指定 ID 不存在时返回 NOT_FOUND。
+  rpc DeleteTodo (DeleteTodoRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v1/todos/{id}"
+    };
+  }
+
+  // WatchTodos 打开服务端流，为每个符合条件的新增、更新或删除发送 TodoEvent。
+  // 流会持续到客户端取消或服务端终止。
+  rpc WatchTodos (WatchTodosRequest) returns (stream TodoEvent) {
+    option (google.api.http) = {
+      get: "/v1/todos/watch"
+    };
+  }
+
+  // SyncTodos 打开双向流进行双向同步。
+  // 客户端发送描述本地变更的 SyncTodoRequest，
+  // 服务端返回反映最终状态的 TodoEvent。
+  // 流会持续到任意一方关闭。
+  rpc SyncTodos (stream SyncTodoRequest) returns (stream TodoEvent) {
+    option (google.api.http) = {
+      post: "/v1/todos/sync"
+      body: "*"
+    };
+  }
+}
+
+// Todo 是待办事项的标准表示。
+message Todo {
+  // 服务端分配的唯一标识，创建时只读。
+  int64 id = 1;
+  // 简短且便于阅读的标题。
+  string title = 2;
+  // 待办事项的详细描述或备注。
+  string content = 3;
+  // 待办事项是否已完成。
+  bool completed = 4;
+  // 待办事项创建时间，由服务端分配且只读。
+  google.protobuf.Timestamp create_time = 5;
+  // 待办事项最后修改时间，由服务端分配且只读。
+  google.protobuf.Timestamp update_time = 6;
+}
+
+// TodoSet 是 ListTodos 返回的分页待办事项集合。
+message TodoSet {
+  // 按 ListTodosRequest.order_by 指定顺序返回的当前页待办事项。
+  repeated Todo todos = 1;
+  // 通过 ListTodosRequest.page_token 获取下一页的令牌。
+  // 没有更多结果时为空。
+  string next_page_token = 2;
+}
+
+// CreateTodoRequest 是 TodoService.CreateTodo 的输入。
+message CreateTodoRequest {
+  // 要创建的待办事项；id、create_time 和 update_time 字段
+  // 输入时会被忽略，并由服务端在响应中填充。
+  Todo todo = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// GetTodoRequest 是 TodoService.GetTodo 的输入。
+message GetTodoRequest {
+  // 要查询的待办事项唯一标识。
+  int64 id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// ListTodosRequest 是 TodoService.ListTodos 的输入。
+message ListTodosRequest {
+  // 可选。单页返回的待办事项最大数量。
+  // 未设置或超出范围时，服务端可能应用默认值和最大值。
+  int32 page_size = 1;
+  // 可选。使用前一次响应的 next_page_token 获取
+  // 下一页；留空表示请求第一页。
+  string page_token = 2;
+  // 可选。标准列表过滤表达式。
+  // 支持的字段：
+  //    * `title`（例如 `title:"bug"`）
+  //    * `content`（例如 `content:"docs"`）
+  //    * `completed`（例如 `completed` 或 `NOT completed`）
+  //    * `create_time` 时间范围（例如 `create_time>="2026-01-01T00:00:00Z"`）
+  string filter = 3;
+  // 可选。以逗号分隔的排序字段列表。
+  // 支持的字段：
+  //    * `id`
+  //    * `title`
+  //    * `create_time`
+  //    * `update_time`
+  // 在字段后追加 ` desc` 表示降序，例如 `create_time desc`。
+  // 未指定方向时默认为升序。
+  string order_by = 4;
+}
+
+// UpdateTodoRequest 是 TodoService.UpdateTodo 的输入。
+message UpdateTodoRequest {
+  // 携带新字段值的待办事项；todo.id 标识目标
+  // 记录且必须设置。
+  Todo todo = 1 [(google.api.field_behavior) = REQUIRED];
+  // 要覆盖的 todo 字段路径集合；未列出的字段
+  // 保持不变；使用单个 `*` 可替换全部可变字段。
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = REQUIRED];
+}
+
+// DeleteTodoRequest 是 TodoService.DeleteTodo 的输入。
+message DeleteTodoRequest {
+  // 要删除的待办事项唯一标识。
+  int64 id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+// WatchTodosRequest 是 TodoService.WatchTodos 的输入。
+// 用于选择事件流需要观察的待办事项。
+message WatchTodosRequest {
+  // 可选。初始快照返回的待办事项最大数量，
+  // 然后开始推送实时事件。
+  int32 page_size = 1;
+  // 可选。用于从之前快照继续读取的分页令牌。
+  string page_token = 2;
+  // 可选。列表过滤表达式，语法与 ListTodosRequest.filter 相同。
+  string filter = 3;
+  // 可选。排序表达式，语法与 ListTodosRequest.order_by 相同。
+  string order_by = 4;
+}
+
+// SyncTodoRequest 是 SyncTodos 双向流中的单条客户端消息。
+// action 字段选择服务端要执行的操作。
+message SyncTodoRequest {
+  // 要执行的操作，可选 `create`、`update` 或 `delete`。
+  string action = 1;
+  // `create` 和 `update` 操作的数据；`delete` 时忽略。
+  Todo todo = 2;
+  // 目标待办事项标识；`delete` 和 `update` 时必填。
+  int64 id = 3;
+  // `update` 操作使用的字段掩码，用于限制被覆盖的字段。
+  // `create` 和 `delete` 时忽略。
+  google.protobuf.FieldMask update_mask = 4;
+}
+
+// TodoEvent 是服务端发送的待办事项变更消息。
+// WatchTodos 和 SyncTodos 流都会发送该消息。
+message TodoEvent {
+  // 已发生的变更，可选 `created`、`updated` 或 `deleted`。
+  string action = 1;
+  // 变更后的待办事项；对于 `deleted` 事件，仅保证 id 字段
+  // 已填充。
+  Todo todo = 2;
+  // 服务端观察到变更的时间。
+  google.protobuf.Timestamp event_time = 3;
+}

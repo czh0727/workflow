@@ -1,0 +1,16 @@
+server:
+  http:
+    addr: 0.0.0.0:8080
+    timeout: 1s
+  grpc:
+    addr: 0.0.0.0:9000
+    timeout: 1s
+data:
+  temporal:
+    addr: temporal:7233
+    namespace: default
+    task_queue: workflow
+  maas_api_gateway:
+    base_url: http://maas-mock:18081
+    timeout: 30s
+    service_token: ""

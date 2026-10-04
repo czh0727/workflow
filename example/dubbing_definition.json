@@ -1,0 +1,350 @@
+{
+  "nodes": [
+    {
+      "id": "workflow_input",
+      "type": "WORKFLOW_INPUT"
+    },
+    {
+      "id": "prepare_request",
+      "type": "DUBBING_PREPARE_REQUEST"
+    },
+    {
+      "id": "prepare_media",
+      "type": "MEDIA_PREPARE"
+    },
+    {
+      "id": "asr",
+      "type": "SPEECH_ASR_CHUNKED",
+      "preset": {
+        "chunk_seconds": 120,
+        "require_segments": true,
+        "request_mode": "sequential"
+      }
+    },
+    {
+      "id": "translate",
+      "type": "TEXT_TRANSLATE_SEGMENTS"
+    },
+    {
+      "id": "clone_gate",
+      "type": "EXCLUSIVE",
+      "preset": {
+        "branches": [
+          {
+            "id": "clone",
+            "expression": "inputs.enabled == true"
+          },
+          {
+            "id": "no_clone",
+            "expression": "true"
+          }
+        ]
+      }
+    },
+    {
+      "id": "prepare_clone_samples",
+      "type": "DUBBING_PREPARE_CLONE_SAMPLES"
+    },
+    {
+      "id": "clone_batch",
+      "type": "SPEECH_VOICE_CLONE_BATCH"
+    },
+    {
+      "id": "build_synthesis_plan",
+      "type": "DUBBING_BUILD_SYNTHESIS_PLAN"
+    },
+    {
+      "id": "tts_batch",
+      "type": "SPEECH_TTS_BATCH"
+    },
+    {
+      "id": "align_timeline",
+      "type": "DUBBING_ALIGN_TIMELINE"
+    },
+    {
+      "id": "render_subtitle",
+      "type": "SUBTITLE_RENDER",
+      "preset": {
+        "format": "srt"
+      }
+    },
+    {
+      "id": "mux_output",
+      "type": "MEDIA_MUX"
+    },
+    {
+      "id": "publish_artifacts",
+      "type": "ARTIFACT_PUBLISH"
+    },
+    {
+      "id": "assemble_result",
+      "type": "DUBBING_ASSEMBLE_RESULT"
+    },
+    {
+      "id": "output",
+      "type": "OUTPUT"
+    }
+  ],
+  "edges": [
+    {
+      "from_node": "workflow_input",
+      "from_port": "request",
+      "to_node": "prepare_request",
+      "to_input": "request"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "source",
+      "to_node": "prepare_media",
+      "to_input": "source"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "media_options",
+      "to_node": "prepare_media",
+      "to_input": "options"
+    },
+    {
+      "from_node": "prepare_media",
+      "from_port": "audio",
+      "to_node": "asr",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "source_language",
+      "to_node": "asr",
+      "to_input": "language"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "asr_options",
+      "to_node": "asr",
+      "to_input": "options"
+    },
+    {
+      "from_node": "asr",
+      "from_port": "transcript",
+      "to_node": "translate",
+      "to_input": "transcript"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "source_language",
+      "to_node": "translate",
+      "to_input": "source_language"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "target_language",
+      "to_node": "translate",
+      "to_input": "target_language"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "translate_options",
+      "to_node": "translate",
+      "to_input": "options"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "enable_voice_clone",
+      "to_node": "clone_gate",
+      "to_input": "enabled"
+    },
+    {
+      "from_node": "prepare_media",
+      "from_port": "media",
+      "to_node": "clone_gate",
+      "to_input": "media"
+    },
+    {
+      "from_node": "asr",
+      "from_port": "transcript",
+      "to_node": "clone_gate",
+      "to_input": "transcript"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "clone_options",
+      "to_node": "clone_gate",
+      "to_input": "options"
+    },
+    {
+      "from_node": "clone_gate",
+      "from_branch": "clone",
+      "from_port": "media",
+      "to_node": "prepare_clone_samples",
+      "to_input": "media"
+    },
+    {
+      "from_node": "clone_gate",
+      "from_branch": "clone",
+      "from_port": "transcript",
+      "to_node": "prepare_clone_samples",
+      "to_input": "transcript"
+    },
+    {
+      "from_node": "clone_gate",
+      "from_branch": "clone",
+      "from_port": "options",
+      "to_node": "prepare_clone_samples",
+      "to_input": "options"
+    },
+    {
+      "from_node": "prepare_clone_samples",
+      "from_port": "items",
+      "to_node": "clone_batch",
+      "to_input": "items"
+    },
+    {
+      "from_node": "prepare_clone_samples",
+      "from_port": "options",
+      "to_node": "clone_batch",
+      "to_input": "options"
+    },
+    {
+      "from_node": "translate",
+      "from_port": "translated_segments",
+      "to_node": "build_synthesis_plan",
+      "to_input": "translated_segments"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "speaker_voice_map",
+      "to_node": "build_synthesis_plan",
+      "to_input": "provided_voice_map"
+    },
+    {
+      "from_node": "clone_batch",
+      "from_port": "voice_map",
+      "to_node": "build_synthesis_plan",
+      "to_input": "cloned_voice_map"
+    },
+    {
+      "from_node": "clone_batch",
+      "from_port": "failures",
+      "to_node": "build_synthesis_plan",
+      "to_input": "clone_failures"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "synthesis_options",
+      "to_node": "build_synthesis_plan",
+      "to_input": "options"
+    },
+    {
+      "from_node": "clone_gate",
+      "from_branch": "no_clone",
+      "to_node": "build_synthesis_plan"
+    },
+    {
+      "from_node": "build_synthesis_plan",
+      "from_port": "tts_items",
+      "to_node": "tts_batch",
+      "to_input": "items"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "tts_options",
+      "to_node": "tts_batch",
+      "to_input": "options"
+    },
+    {
+      "from_node": "build_synthesis_plan",
+      "from_port": "timeline_plan",
+      "to_node": "align_timeline",
+      "to_input": "plan"
+    },
+    {
+      "from_node": "tts_batch",
+      "from_port": "clips",
+      "to_node": "align_timeline",
+      "to_input": "clips"
+    },
+    {
+      "from_node": "translate",
+      "from_port": "translated_segments",
+      "to_node": "render_subtitle",
+      "to_input": "segments"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "subtitle_options",
+      "to_node": "render_subtitle",
+      "to_input": "options"
+    },
+    {
+      "from_node": "prepare_media",
+      "from_port": "media",
+      "to_node": "mux_output",
+      "to_input": "source_video"
+    },
+    {
+      "from_node": "align_timeline",
+      "from_port": "audio",
+      "to_node": "mux_output",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "render_subtitle",
+      "from_port": "subtitle",
+      "to_node": "mux_output",
+      "to_input": "subtitle"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "render_options",
+      "to_node": "mux_output",
+      "to_input": "options"
+    },
+    {
+      "from_node": "mux_output",
+      "from_port": "artifacts",
+      "to_node": "publish_artifacts",
+      "to_input": "artifacts"
+    },
+    {
+      "from_node": "publish_artifacts",
+      "from_port": "artifacts",
+      "to_node": "assemble_result",
+      "to_input": "artifacts"
+    },
+    {
+      "from_node": "translate",
+      "from_port": "translated_segments",
+      "to_node": "assemble_result",
+      "to_input": "translated_segments"
+    },
+    {
+      "from_node": "translate",
+      "from_port": "failed_segment_ids",
+      "to_node": "assemble_result",
+      "to_input": "translation_failures"
+    },
+    {
+      "from_node": "translate",
+      "from_port": "warnings",
+      "to_node": "assemble_result",
+      "to_input": "translation_warnings"
+    },
+    {
+      "from_node": "tts_batch",
+      "from_port": "failures",
+      "to_node": "assemble_result",
+      "to_input": "tts_failures"
+    },
+    {
+      "from_node": "align_timeline",
+      "from_port": "warnings",
+      "to_node": "assemble_result",
+      "to_input": "alignment_warnings"
+    },
+    {
+      "from_node": "assemble_result",
+      "from_port": "result",
+      "to_node": "output",
+      "to_input": "result"
+    }
+  ]
+}

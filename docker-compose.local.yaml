@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: workflow
+      POSTGRES_PASSWORD: workflow
+      POSTGRES_DB: workflow
+    ports:
+      # 宿主机使用 15432，容器内仍然使用 PostgreSQL 默认的 5432。
+      - "15432:5432"
+    volumes:
+      - workflow-postgres:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./internal/data/db/migrations/000001_init.sql:/docker-entrypoint-initdb.d/02-workflow.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workflow -d workflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  temporal:
+    image: temporalio/auto-setup:1.27.2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: workflow
+      POSTGRES_PWD: workflow
+      POSTGRES_SEEDS: postgres
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+      SKIP_DB_CREATE: "true"
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CLI_ADDRESS: temporal:7233
+    volumes:
+      - ./docker/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig:ro
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "describe", "--address", "temporal:7233"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    ports:
+      # 宿主机使用 17233，应用配置中的 Temporal 地址与此保持一致。
+      - "17233:7233"
+
+  temporal-ui:
+    image: temporalio/ui:2.34.0
+    depends_on:
+      temporal:
+        condition: service_healthy
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+    ports:
+      - "18082:8080"
+
+  maas-mock:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    command: ["/app/mock-maas"]
+    environment:
+      MOCK_MAAS_ADDR: ":18081"
+      MOCK_MAAS_PROCESSING_POLLS: "0"
+      MOCK_MAAS_MODE: success
+    ports:
+      - "18081:18081"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:18081/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  workflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    command: ["/app/workflow", "-conf", "/app/configs/config.docker.workflow.yaml"]
+    restart: on-failure
+    depends_on:
+      temporal:
+        condition: service_healthy
+      maas-mock:
+        condition: service_healthy
+    environment:
+      PG_DSN: postgres://workflow:workflow@postgres:5432/workflow?sslmode=disable&application_name=workflow
+    ports:
+      - "8080:8080"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    command: ["/app/worker", "-conf", "/app/configs/config.docker.worker.yaml"]
+    restart: on-failure
+    depends_on:
+      temporal:
+        condition: service_healthy
+      maas-mock:
+        condition: service_healthy
+    environment:
+      PG_DSN: postgres://workflow:workflow@postgres:5432/workflow?sslmode=disable&application_name=worker
+    ports:
+      - "8081:8081"
+
+volumes:
+  workflow-postgres:

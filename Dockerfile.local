@@ -1,0 +1,19 @@
+FROM golang:1.26.1-alpine AS build
+
+WORKDIR /src
+RUN apk add --no-cache ca-certificates
+COPY . .
+
+RUN CGO_ENABLED=0 GOOS=linux GOWORK=off go build -trimpath -o /out/workflow ./cmd/workflow && \
+    CGO_ENABLED=0 GOOS=linux GOWORK=off go build -trimpath -o /out/worker ./cmd/worker && \
+    CGO_ENABLED=0 GOOS=linux GOWORK=off go build -trimpath -o /out/mock-maas ./cmd/mock-maas
+
+FROM alpine:3.23
+RUN apk add --no-cache ca-certificates tzdata
+COPY --from=build /out/workflow /app/workflow
+COPY --from=build /out/worker /app/worker
+COPY --from=build /out/mock-maas /app/mock-maas
+COPY configs /app/configs
+WORKDIR /app
+EXPOSE 8080 8081 18081
+CMD ["/app/workflow", "-conf", "/app/configs/config.docker.workflow.yaml"]

@@ -1,0 +1,7 @@
+# 本地 Temporal SQL 开发环境配置，仅用于学习和测试。
+limit.maxIDLength:
+  - value: 255
+    constraints: {}
+system.forceSearchAttributesCacheRefreshOnRead:
+  - value: true
+    constraints: {}

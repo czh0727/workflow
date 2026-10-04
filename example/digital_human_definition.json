@@ -1,0 +1,186 @@
+{
+  "nodes": [
+    {"id": "workflow_input", "type": "WORKFLOW_INPUT"},
+    {"id": "prepare_request", "type": "DIGITAL_HUMAN_PREPARE_REQUEST"},
+    {
+      "id": "audio_source_gate",
+      "type": "EXCLUSIVE",
+      "preset": {
+        "branches": [
+          {"id": "script", "expression": "inputs.input_mode == \"script\""},
+          {"id": "audio", "expression": "true"}
+        ]
+      }
+    },
+    {"id": "tts", "type": "SPEECH_TTS_SEGMENT"},
+    {"id": "prepare_audio", "type": "DIGITAL_HUMAN_PREPARE_AUDIO"},
+    {"id": "avatar", "type": "AVATAR_GENERATE"},
+    {"id": "assemble_result", "type": "DIGITAL_HUMAN_ASSEMBLE_RESULT"},
+    {"id": "output", "type": "OUTPUT"}
+  ],
+  "edges": [
+    {
+      "from_node": "workflow_input",
+      "from_port": "request",
+      "to_node": "prepare_request",
+      "to_input": "request"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "input_mode",
+      "to_node": "audio_source_gate",
+      "to_input": "input_mode"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "segment_id",
+      "to_node": "audio_source_gate",
+      "to_input": "segment_id"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "script_text",
+      "to_node": "audio_source_gate",
+      "to_input": "text"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "voice_id",
+      "to_node": "audio_source_gate",
+      "to_input": "voice_id"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "input_audio",
+      "to_node": "audio_source_gate",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "tts_options",
+      "to_node": "audio_source_gate",
+      "to_input": "tts_options"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "audio_options",
+      "to_node": "audio_source_gate",
+      "to_input": "audio_options"
+    },
+    {
+      "from_node": "audio_source_gate",
+      "from_branch": "script",
+      "from_port": "segment_id",
+      "to_node": "tts",
+      "to_input": "segment_id"
+    },
+    {
+      "from_node": "audio_source_gate",
+      "from_branch": "script",
+      "from_port": "text",
+      "to_node": "tts",
+      "to_input": "text"
+    },
+    {
+      "from_node": "audio_source_gate",
+      "from_branch": "script",
+      "from_port": "voice_id",
+      "to_node": "tts",
+      "to_input": "voice_id"
+    },
+    {
+      "from_node": "audio_source_gate",
+      "from_branch": "script",
+      "from_port": "tts_options",
+      "to_node": "tts",
+      "to_input": "options"
+    },
+    {
+      "from_node": "tts",
+      "from_port": "audio",
+      "to_node": "prepare_audio",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "audio_source_gate",
+      "from_branch": "script",
+      "from_port": "audio_options",
+      "to_node": "prepare_audio",
+      "to_input": "options"
+    },
+    {
+      "from_node": "audio_source_gate",
+      "from_branch": "audio",
+      "from_port": "audio",
+      "to_node": "prepare_audio",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "audio_source_gate",
+      "from_branch": "audio",
+      "from_port": "audio_options",
+      "to_node": "prepare_audio",
+      "to_input": "options"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "image",
+      "to_node": "avatar",
+      "to_input": "image"
+    },
+    {
+      "from_node": "prepare_audio",
+      "from_port": "audio",
+      "to_node": "avatar",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "prompt",
+      "to_node": "avatar",
+      "to_input": "prompt"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "model",
+      "to_node": "avatar",
+      "to_input": "model"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "mode",
+      "to_node": "avatar",
+      "to_input": "mode"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "avatar_options",
+      "to_node": "avatar",
+      "to_input": "options"
+    },
+    {
+      "from_node": "avatar",
+      "from_port": "video",
+      "to_node": "assemble_result",
+      "to_input": "video"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "input_mode",
+      "to_node": "assemble_result",
+      "to_input": "input_mode"
+    },
+    {
+      "from_node": "prepare_audio",
+      "from_port": "audio",
+      "to_node": "assemble_result",
+      "to_input": "prepared_audio"
+    },
+    {
+      "from_node": "assemble_result",
+      "from_port": "result",
+      "to_node": "output",
+      "to_input": "result"
+    }
+  ]
+}

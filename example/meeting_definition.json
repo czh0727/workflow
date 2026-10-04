@@ -1,0 +1,154 @@
+{
+  "nodes": [
+    {"id": "workflow_input", "type": "WORKFLOW_INPUT"},
+    {"id": "prepare_request", "type": "MEETING_PREPARE_REQUEST"},
+    {"id": "prepare_media", "type": "MEDIA_PREPARE"},
+    {
+      "id": "asr",
+      "type": "SPEECH_ASR_CHUNKED",
+      "preset": {
+        "chunk_seconds": 120,
+        "require_segments": true,
+        "request_mode": "sequential"
+      }
+    },
+    {"id": "build_prompt", "type": "MEETING_BUILD_PROMPT"},
+    {
+      "id": "summary_gate",
+      "type": "EXCLUSIVE",
+      "preset": {
+        "branches": [
+          {"id": "generate", "expression": "inputs.enabled == true"},
+          {"id": "skip", "expression": "true"}
+        ]
+      }
+    },
+    {"id": "llm", "type": "LLM_GENERATE"},
+    {"id": "assemble_result", "type": "MEETING_ASSEMBLE_RESULT"},
+    {"id": "output", "type": "OUTPUT"}
+  ],
+  "edges": [
+    {
+      "from_node": "workflow_input",
+      "from_port": "request",
+      "to_node": "prepare_request",
+      "to_input": "request"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "source",
+      "to_node": "prepare_media",
+      "to_input": "source"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "media_options",
+      "to_node": "prepare_media",
+      "to_input": "options"
+    },
+    {
+      "from_node": "prepare_media",
+      "from_port": "audio",
+      "to_node": "asr",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "language",
+      "to_node": "asr",
+      "to_input": "language"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "asr_options",
+      "to_node": "asr",
+      "to_input": "options"
+    },
+    {
+      "from_node": "asr",
+      "from_port": "transcript",
+      "to_node": "build_prompt",
+      "to_input": "transcript"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "meeting_options",
+      "to_node": "build_prompt",
+      "to_input": "options"
+    },
+    {
+      "from_node": "build_prompt",
+      "from_port": "enabled",
+      "to_node": "summary_gate",
+      "to_input": "enabled"
+    },
+    {
+      "from_node": "build_prompt",
+      "from_port": "prompt",
+      "to_node": "summary_gate",
+      "to_input": "prompt"
+    },
+    {
+      "from_node": "build_prompt",
+      "from_port": "system_prompt",
+      "to_node": "summary_gate",
+      "to_input": "system_prompt"
+    },
+    {
+      "from_node": "build_prompt",
+      "from_port": "llm_options",
+      "to_node": "summary_gate",
+      "to_input": "options"
+    },
+    {
+      "from_node": "summary_gate",
+      "from_branch": "generate",
+      "from_port": "prompt",
+      "to_node": "llm",
+      "to_input": "prompt"
+    },
+    {
+      "from_node": "summary_gate",
+      "from_branch": "generate",
+      "from_port": "system_prompt",
+      "to_node": "llm",
+      "to_input": "system_prompt"
+    },
+    {
+      "from_node": "summary_gate",
+      "from_branch": "generate",
+      "from_port": "options",
+      "to_node": "llm",
+      "to_input": "options"
+    },
+    {
+      "from_node": "llm",
+      "from_port": "result",
+      "to_node": "assemble_result",
+      "to_input": "llm_result"
+    },
+    {
+      "from_node": "summary_gate",
+      "from_branch": "skip",
+      "to_node": "assemble_result"
+    },
+    {
+      "from_node": "asr",
+      "from_port": "transcript",
+      "to_node": "assemble_result",
+      "to_input": "transcript"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "meeting_options",
+      "to_node": "assemble_result",
+      "to_input": "options"
+    },
+    {
+      "from_node": "assemble_result",
+      "from_port": "result",
+      "to_node": "output",
+      "to_input": "result"
+    }
+  ]
+}

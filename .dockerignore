@@ -1,0 +1,6 @@
+.git
+.temp
+bin
+*.log
+*.test
+.DS_Store

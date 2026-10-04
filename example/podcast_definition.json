@@ -1,0 +1,165 @@
+{
+  "nodes": [
+    {"id": "workflow_input", "type": "WORKFLOW_INPUT"},
+    {"id": "prepare_request", "type": "PODCAST_PREPARE_REQUEST"},
+    {"id": "parse_script", "type": "PODCAST_PARSE_SCRIPT"},
+    {"id": "tts_batch", "type": "SPEECH_TTS_BATCH"},
+    {"id": "assemble_audio", "type": "PODCAST_ASSEMBLE_AUDIO"},
+    {
+      "id": "subtitle_gate",
+      "type": "EXCLUSIVE",
+      "preset": {
+        "branches": [
+          {"id": "render", "expression": "inputs.enabled == true"},
+          {"id": "skip", "expression": "true"}
+        ]
+      }
+    },
+    {"id": "render_subtitle", "type": "SUBTITLE_RENDER", "preset": {"format": "srt"}},
+    {"id": "collect_artifacts", "type": "PODCAST_COLLECT_ARTIFACTS"},
+    {"id": "publish_artifacts", "type": "ARTIFACT_PUBLISH"},
+    {"id": "assemble_result", "type": "PODCAST_ASSEMBLE_RESULT"},
+    {"id": "output", "type": "OUTPUT"}
+  ],
+  "edges": [
+    {
+      "from_node": "workflow_input",
+      "from_port": "request",
+      "to_node": "prepare_request",
+      "to_input": "request"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "script_text",
+      "to_node": "parse_script",
+      "to_input": "script_text"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "speakers",
+      "to_node": "parse_script",
+      "to_input": "speakers"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "parse_options",
+      "to_node": "parse_script",
+      "to_input": "options"
+    },
+    {
+      "from_node": "parse_script",
+      "from_port": "tts_items",
+      "to_node": "tts_batch",
+      "to_input": "items"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "tts_options",
+      "to_node": "tts_batch",
+      "to_input": "options"
+    },
+    {
+      "from_node": "parse_script",
+      "from_port": "episode_plan",
+      "to_node": "assemble_audio",
+      "to_input": "plan"
+    },
+    {
+      "from_node": "tts_batch",
+      "from_port": "clips",
+      "to_node": "assemble_audio",
+      "to_input": "clips"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "audio_options",
+      "to_node": "assemble_audio",
+      "to_input": "options"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "include_subtitle",
+      "to_node": "subtitle_gate",
+      "to_input": "enabled"
+    },
+    {
+      "from_node": "assemble_audio",
+      "from_port": "segments",
+      "to_node": "subtitle_gate",
+      "to_input": "segments"
+    },
+    {
+      "from_node": "prepare_request",
+      "from_port": "subtitle_options",
+      "to_node": "subtitle_gate",
+      "to_input": "options"
+    },
+    {
+      "from_node": "subtitle_gate",
+      "from_branch": "render",
+      "from_port": "segments",
+      "to_node": "render_subtitle",
+      "to_input": "segments"
+    },
+    {
+      "from_node": "subtitle_gate",
+      "from_branch": "render",
+      "from_port": "options",
+      "to_node": "render_subtitle",
+      "to_input": "options"
+    },
+    {
+      "from_node": "assemble_audio",
+      "from_port": "audio",
+      "to_node": "collect_artifacts",
+      "to_input": "audio"
+    },
+    {
+      "from_node": "render_subtitle",
+      "from_port": "subtitle",
+      "to_node": "collect_artifacts",
+      "to_input": "subtitle"
+    },
+    {
+      "from_node": "subtitle_gate",
+      "from_branch": "skip",
+      "to_node": "collect_artifacts"
+    },
+    {
+      "from_node": "collect_artifacts",
+      "from_port": "artifacts",
+      "to_node": "publish_artifacts",
+      "to_input": "artifacts"
+    },
+    {
+      "from_node": "publish_artifacts",
+      "from_port": "artifacts",
+      "to_node": "assemble_result",
+      "to_input": "artifacts"
+    },
+    {
+      "from_node": "parse_script",
+      "from_port": "episode_plan",
+      "to_node": "assemble_result",
+      "to_input": "episode_plan"
+    },
+    {
+      "from_node": "assemble_audio",
+      "from_port": "timeline",
+      "to_node": "assemble_result",
+      "to_input": "timeline"
+    },
+    {
+      "from_node": "tts_batch",
+      "from_port": "failures",
+      "to_node": "assemble_result",
+      "to_input": "tts_failures"
+    },
+    {
+      "from_node": "assemble_result",
+      "from_port": "result",
+      "to_node": "output",
+      "to_input": "result"
+    }
+  ]
+}

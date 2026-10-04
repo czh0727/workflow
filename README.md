@@ -4,6 +4,33 @@
 
 ## 本地运行
 
+### Vue 控制台
+
+项目包含一个用于学习、排查和手动测试的 Vue + TypeScript 控制台，位于 `frontend/`。它把 Workflow API、Worker 健康检查、节点类型、执行详情和 Temporal UI 放到同一个界面中：
+
+```bash
+make frontend-install
+make frontend-dev
+```
+
+打开 <http://localhost:5173>。Vite 开发服务器默认将以下路径代理到本地 Docker 服务：
+
+| 前端路径 | 默认目标 |
+| --- | --- |
+| `/internal/*`、`/live`、`/ready` | Workflow API `localhost:8080` |
+| `/worker/*` | Worker `localhost:8081` |
+| Temporal UI iframe | `http://127.0.0.1:18082/namespaces/default/workflows` |
+
+控制台支持创建工作流、发起执行、查看输入/输出和时间线、浏览 Worker 注册的节点，并在 API playground 中复现 HTTP 请求。Temporal UI 页面提供嵌入视图和新窗口入口。运行 `make local-start` 后再运行 `make frontend-dev` 即可进行完整联调；如果后端不在默认地址，可在右上角 Connection settings 中修改。
+
+构建静态资源：
+
+```bash
+make frontend-build
+```
+
+也可以通过 `frontend/.env.local` 覆盖代理目标，例如 `VITE_WORKFLOW_API_TARGET=http://127.0.0.1:8080`、`VITE_WORKER_API_TARGET=http://127.0.0.1:8081`；Temporal iframe 地址可通过 `VITE_TEMPORAL_UI_URL=http://127.0.0.1:18082/namespaces/default/workflows` 设置。
+
 ### 端口
 
 | 服务 | 宿主机端口 | 容器内端口或用途 |
@@ -14,6 +41,7 @@
 | Temporal | 17233 | 容器内 7233 |
 | MaaS Mock | 18081 | HTTP |
 | Temporal UI | 18082 | Web UI |
+| Vue 控制台 | 5173 | Vite dev server |
 
 PostgreSQL 的宿主机端口特意设置为 `15432`，避免占用本机已有的 `5432`。宿主机上的 Go 进程使用 `127.0.0.1:15432`；Compose 内的服务必须使用 `postgres:5432`。
 

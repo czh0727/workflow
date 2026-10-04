@@ -72,6 +72,21 @@ local-run-worker:
 local-test:
 	GOWORK=off go test ./...
 
+.PHONY: frontend-install
+# 安装 Vue 控制台依赖。
+frontend-install:
+	cd frontend && npm install
+
+.PHONY: frontend-dev
+# 启动 Vue 控制台；默认代理 Workflow API、Worker 和 Temporal UI。
+frontend-dev:
+	cd frontend && npm run dev
+
+.PHONY: frontend-build
+# 构建 Vue 控制台静态资源。
+frontend-build:
+	cd frontend && npm run build
+
 .PHONY: generate
 # 执行代码生成和依赖整理。
 generate:
